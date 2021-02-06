@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tianshou.data import Collector
 from tianshou.env import DummyVectorEnv
 from tianshou.utils.net.common import Net
-from tianshou.trainer import offline_trainer
+from tianshou.trainer import offline_trainer, off
 from marvil_policy import marvil_policy
 from bnn import EnsembledBNN
 from fakenv import FakeEnv
@@ -40,6 +40,11 @@ def get_args():
     parser.add_argument('--resume-path', type=str, default=None)
     parser.add_argument('--device', type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument('--logdir', type=str, default='log')
+    parser.add_argument('--epoch', type=int, default=20)
+    parser.add_argument('--step-per-epoch', type=int, default=1000)
+    parser.add_argument('--test-num', type=int, default=100)
+    parser.add_argument('--render', type=float, default=0.)
+
     return parser.parse_args()
 
 def main(args=get_args()):
@@ -68,8 +73,32 @@ def main(args=get_args()):
     ######################################### Policy ############################
 
     ######################################### Create Environment ################
-    
+    # Dummy env or single env are both accepted because the collector will convert single env 
+    # to dummy env later.
+    # For marvil, train_env is no longer needed and test_env should be the real env.
+    test_envs = DummyVectorEnv(
+        [lambda: gym.make(args.task) for _ in range(args.test_num)]
+    )
 
+    # seed
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    test_envs.seed(args.seed)
+
+    # Actor Network
+
+
+    # Value Network
+
+
+
+
+
+
+    # load a previous policy
+    if args.resume_path:
+        policy.load_state_dict(torch.load(args.resume_path))
+        print("Loaded agent from: ", args.resume_path)
     ######################################### Collector #########################
     # For offline setting, train_collector is no longer needed
     test_collector = Collector(policy, test_envs)
@@ -86,8 +115,23 @@ def main(args=get_args()):
 
     ######################################### Train #############################
     # trainer
+    result = offline_trainer(
+        policy, offline_buffer, test_collector, args.epoch,
+        args.step_per_epoch, args.test_num, args.batch_size,
+        stop_fn=stop_fn, save_fn=save_fn, writer=writer
+    )
 
+    assert stop_fn(result['best_reward'])
 
+    if __name__ == '__main__':
+        pprint.pprint(result)
+        # Let's watch its performance!
+        policy.eval()
+        test_envs.seed(args.seed)
+        test_collector.reset()
+        result = test_collector.collect(n_episode=[1] * args.test_num, render=args.render)
+        print(f'Final reward: {result["rew"]}, length: {result["len"]}')
+        
 if __name__ == '__main__':
     main()
 
