@@ -19,7 +19,7 @@ class StaticFns:
     @staticmethod
     def termination_fn(obs, act, next_obs):
         assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
-        done = np.array([False]).repeate(len(obs))
+        done = np.array([False]).repeat(len(obs))
         done = done[:,None]
         return done
 
@@ -44,6 +44,8 @@ def get_args():
     parser.add_argument('--step-per-epoch', type=int, default=1000)
     parser.add_argument('--test-num', type=int, default=100)
     parser.add_argument('--render', type=float, default=0.)
+    parser.add_argument('--layer-num', type=int, default=3)
+    parser.add_argument('--hidden-layer-size', type=int, default=128)
 
     return parser.parse_args()
 
@@ -85,11 +87,22 @@ def main(args=get_args()):
     torch.manual_seed(args.seed)
     test_envs.seed(args.seed)
 
-    # Actor Network
-
+    # policy Network
+    args.hidden_sizes = np.array([args.hidden_layer_size]).repeat(args.layer_num)
+    policy_net = Net(args.state_shape, args.action_shape, 
+                     hidden_sizes=args.hidden_sizes, device=args.device).to(args.device)
 
     # Value Network
+    value_net = Net(args.state_shape,
+                      hidden_sizes=args.hidden_sizes, device=args.device).to(args.device)
 
+    optimizer = torch.optim.Adam(
+        set(policy_net.parameter()).union(value_net.parameter()), lr=args.lr
+    )
+
+    policy = marvil_policy(
+        
+    )
 
 
 
