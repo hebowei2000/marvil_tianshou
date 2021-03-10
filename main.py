@@ -34,6 +34,7 @@ def get_args():
     parser.add_argument('--task', type=str, default="halfcheetah-medium-v0")
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--gamma', type=float, default=0.99)
+    parser.add_argument('--vf_coeff', type=float, default=1.0)
     parser.add_argument('--seed', type=int, default=1626)
     parser.add_argument('--batch-size', type=int, default=200)
     parser.add_argument('--buffer-size', type=int, default=200000)
@@ -101,7 +102,7 @@ def main(args=get_args()):
     )
 
     policy = marvil_policy(
-        policy_net, value_net, optimizer, args.gamma, 
+        policy_net, value_net, optimizer, args.gamma, args.vf_coeff, 
     )
 
 
